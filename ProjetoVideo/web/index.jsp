@@ -13,7 +13,12 @@
     </head>
     <body>
         
-        <input type="file" name="datafile" size="40">
+        <FORM action="FileUpload" METHOD="POST" enctype="multipart/form-data">
+            <input type="file" name="mediafile" size="40">
+            <INPUT TYPE="submit" VALUE="Converter">
+        </FORM>
+        
+
         
     </body>
 </html>

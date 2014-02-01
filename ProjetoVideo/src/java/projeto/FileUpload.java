@@ -102,7 +102,7 @@ public class FileUpload extends HttpServlet {
                         File storeFile = new File(filePath);
                         
                         // Cria um bucket do inputStream de upload na Amazon S3
-                        s3Folder.create(item);
+                        s3Folder.create(item, fileName);
                         
                         // saves the file on disk
                         item.write(storeFile);

@@ -2,7 +2,6 @@ package projeto;
 
 import java.io.InputStream;
 
-import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.auth.ClasspathPropertiesFileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -13,8 +12,6 @@ import org.apache.commons.fileupload.FileItem;
 
 public class AmazonS3Tools {
 
-    private static final String AWS_KEY = "AKIAJ5NS3OEEFMT7JJPA";
-    private static final String AWS_SECRET = "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";
     public static final String BUCKET = "rangelsambavideo";
     public final static String FOLDER_SUFFIX = "/";
     public final static String FOLDER_NAME = "input";
@@ -23,15 +20,10 @@ public class AmazonS3Tools {
     
     private final AmazonS3Client client;
 
-    public AmazonS3Tools() {
-        
+    public AmazonS3Tools() {        
        // Cria o cliente S3, de acordo com o arquivo de configuração
-        client = new AmazonS3Client(
-                //new ClasspathPropertiesFileCredentialsProvider());
-                new BasicAWSCredentials(AWS_KEY, AWS_SECRET));
+        client = new AmazonS3Client(new ClasspathPropertiesFileCredentialsProvider());
     }
-    
-    
 
     public void create(FileItem fileItem, String fileName) throws IOException {
 		// TODO validate foldername 

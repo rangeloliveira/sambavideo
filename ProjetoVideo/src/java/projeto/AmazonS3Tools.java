@@ -4,63 +4,96 @@ import java.io.InputStream;
 
 import com.amazonaws.auth.ClasspathPropertiesFileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
+import com.amazonaws.services.s3.model.S3Object;
 import java.io.IOException;
-import org.apache.commons.fileupload.FileItem;
+import java.net.URL;
+import java.util.Date;
 
 public class AmazonS3Tools {
 
     public static final String BUCKET = "rangelsambavideo";
     public final static String FOLDER_SUFFIX = "/";
-    public final static String FOLDER_NAME = "input";
-    public final static String FOLDER_NAME_OUPUT = "output";
 
-    
+    public static String FOLDER_NAME = "input";
+    public static String FOLDER_NAME_OUPUT = "output";
+
     private final AmazonS3Client client;
     private static AmazonS3Tools amazonS3Tools;
 
-    private AmazonS3Tools() {        
-       // Cria o cliente S3, de acordo com o arquivo de configuração
+    private AmazonS3Tools() {
+        // Cria o cliente S3, de acordo com o arquivo de configuração
         client = new AmazonS3Client(new ClasspathPropertiesFileCredentialsProvider());
     }
-    
-    public static AmazonS3Tools getAmazonS3()
-    {
-        if(amazonS3Tools==null)
-        {
+
+    public static AmazonS3Tools getAmazonS3() {
+        if (amazonS3Tools == null) {
             amazonS3Tools = new AmazonS3Tools();
         }
         return amazonS3Tools;
     }
-    
+
     /**
-     * 
-     * @return 
+     *
+     * @return
      */
-    public static String getBasePath()
-    {
+    public static String getBasePath() {
         return AmazonS3Tools.BUCKET + AmazonS3Tools.FOLDER_SUFFIX + AmazonS3Tools.FOLDER_NAME + AmazonS3Tools.FOLDER_SUFFIX;
     }
+    
+      /**
+     *
+     * @return
+     */
+    public static String getOutputPath() {
+        return AmazonS3Tools.BUCKET + AmazonS3Tools.FOLDER_SUFFIX + AmazonS3Tools.FOLDER_NAME_OUPUT + AmazonS3Tools.FOLDER_SUFFIX;
+    }
 
-    public void create(FileItem fileItem, String fileName) throws IOException {
+    public void create(InputStream inputStream, Long lenght, String fileName) throws IOException {
 
         // Configura o metadata de acordo com o tamanho do fluxo de entrada
         ObjectMetadata metadata = new ObjectMetadata();
-        metadata.setContentLength(fileItem.getSize());
-
-        // Obtém o fluxo de dados do arquivo de upload
-        InputStream conteudo = fileItem.getInputStream();
+        metadata.setContentLength(lenght);
 
         // Criação objeto alvo de criação na S3
         PutObjectRequest putObjectRequest
                 = new PutObjectRequest(BUCKET, FOLDER_NAME + FOLDER_SUFFIX + fileName,
-                        conteudo, metadata);
+                        inputStream, metadata);
+                        //.withCannedAcl(CannedAccessControlList.PublicRead); já adicionei as políticas para o ZEncoder diretamente na S3
 
         // Envia request para a S3 criar o arquivo
         PutObjectResult result = client.putObject(putObjectRequest);
-
     }
-    
+
+    /**
+     *
+     * @param objectRequest
+     * @return
+     */
+    public S3Object getObject(String bucket, String key) {
+        return client.getObject(bucket, key);
+    }
+
+    /**
+     *
+     * @param bucket
+     * @param key
+     * @return
+     */
+    public URL getURL(String bucket, String key) {
+        return client.getUrl(bucket, key);
+    }
+
+    /**
+     *
+     * @param s3Object
+     */
+    public void deleteObject(String bucket, String key) {
+        client.deleteObject(bucket, key);
+    }
+
 }

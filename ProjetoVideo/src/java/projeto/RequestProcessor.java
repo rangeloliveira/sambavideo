@@ -125,7 +125,7 @@ public class RequestProcessor extends HttpServlet {
         String fileName = new File(item.getName()).getName();
         try {
             // Cria um bucket do inputStream de upload na Amazon S3
-            amazonS3Tools.create(item, fileName);
+            amazonS3Tools.create(item.getInputStream(), item.getSize(), fileName);
         } catch (IOException ex) {
             Logger.getLogger(RequestProcessor.class.getName()).log(Level.SEVERE, null, ex);
         }

@@ -69,7 +69,7 @@ public class ZEncoderTools {
      */
     private ZencoderOutput createOuput(String outputFileName)
     {
-        ZencoderOutput output = new ZencoderOutput("test", "s3://" + AmazonS3Tools.getBasePath() + outputFileName);
+        ZencoderOutput output = new ZencoderOutput("test", "s3://" + AmazonS3Tools.getOutputPath() + outputFileName);
         output.setVideoCodec(ZencoderVideoCodec.mpeg4);
         output.setAudioBitrate(64);
         output.setPublic(true);

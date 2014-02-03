@@ -34,23 +34,31 @@ public class AmazonS3Tools {
         }
         return amazonS3Tools;
     }
+    
+    /**
+     * 
+     * @return 
+     */
+    public static String getBasePath()
+    {
+        return AmazonS3Tools.BUCKET + AmazonS3Tools.FOLDER_SUFFIX + AmazonS3Tools.FOLDER_NAME + AmazonS3Tools.FOLDER_SUFFIX;
+    }
 
     public void create(FileItem fileItem, String fileName) throws IOException {
-		// TODO validate foldername 
 
-        // Create metadata for your folder & set content-length to 0
+        // Configura o metadata de acordo com o tamanho do fluxo de entrada
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentLength(fileItem.getSize());
 
-        // Create empty content
+        // Obtém o fluxo de dados do arquivo de upload
         InputStream conteudo = fileItem.getInputStream();
 
-        // Create a PutObjectRequest passing the foldername suffixed by /
+        // Criação objeto alvo de criação na S3
         PutObjectRequest putObjectRequest
                 = new PutObjectRequest(BUCKET, FOLDER_NAME + FOLDER_SUFFIX + fileName,
                         conteudo, metadata);
 
-        // Send request to S3 to create folder
+        // Envia request para a S3 criar o arquivo
         PutObjectResult result = client.putObject(putObjectRequest);
 
     }

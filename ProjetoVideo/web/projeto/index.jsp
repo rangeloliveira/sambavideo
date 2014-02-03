@@ -13,11 +13,10 @@
     </head>
     <body>
         <h1>Conversão de vídeo: ZEncoder/AmazonS3</h1>
-        <form action="FileUpload" method="post" enctype="multipart/form-data">
+        <form action="RequestProcessor" method="post" enctype="multipart/form-data">
             Escolha o arquivo de vídeo: <input type="file" name="mediafile" size="40"> <br>
             <input type="submit" value="Converter">
         </form>    
 
-        
-    </body>
+</body>
 </html>

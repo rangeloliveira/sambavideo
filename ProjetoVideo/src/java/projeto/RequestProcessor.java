@@ -26,8 +26,8 @@ import org.apache.commons.fileupload.servlet.ServletFileUpload;
  *
  * @author Rangel
  */
-@WebServlet(name = "FileUpload", urlPatterns = {"/FileUpload"})
-public class FileUpload extends HttpServlet {
+@WebServlet(name = "RequestProcessor", urlPatterns = {"/RequestProcessor"})
+public class RequestProcessor extends HttpServlet {
 
     // Configuração de upload
     private static final int MEMORY_THRESHOLD = 1024 * 1024 * 3;  // 3MB
@@ -42,7 +42,7 @@ public class FileUpload extends HttpServlet {
     /**
      * 
      */    
-    public FileUpload() {
+    public RequestProcessor() {
         configure();
     }
 
@@ -127,7 +127,7 @@ public class FileUpload extends HttpServlet {
             // Cria um bucket do inputStream de upload na Amazon S3
             amazonS3Tools.create(item, fileName);
         } catch (IOException ex) {
-            Logger.getLogger(FileUpload.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(RequestProcessor.class.getName()).log(Level.SEVERE, null, ex);
         }
         
         return item;
@@ -142,7 +142,7 @@ public class FileUpload extends HttpServlet {
         try {
             zEncoderTools.createJob(fileName, fileName);
         } catch (ZencoderErrorResponseException ex) {
-            Logger.getLogger(FileUpload.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(RequestProcessor.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
@@ -170,7 +170,7 @@ public class FileUpload extends HttpServlet {
         FileItem item = uploadAmazonS3(request);
         
         // Fase de Encoding com o Zencoder
-        encoderWithZEncoder(item);
+        encoderWithZEncoder(item);        
         
         // URL na Amazon S3 do arquivo convertido
         String urlOut = zEncoderTools.getUrlOut();

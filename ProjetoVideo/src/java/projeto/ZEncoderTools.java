@@ -9,6 +9,7 @@ import de.bitzeche.video.transcoding.zencoder.IZencoderClient;
 import de.bitzeche.video.transcoding.zencoder.ZencoderClient;
 import de.bitzeche.video.transcoding.zencoder.enums.ZencoderAPIVersion;
 import de.bitzeche.video.transcoding.zencoder.enums.ZencoderNotificationJobState;
+import de.bitzeche.video.transcoding.zencoder.enums.ZencoderVideoCodec;
 import de.bitzeche.video.transcoding.zencoder.job.ZencoderJob;
 import de.bitzeche.video.transcoding.zencoder.job.ZencoderOutput;
 import de.bitzeche.video.transcoding.zencoder.response.ZencoderErrorResponseException;
@@ -26,23 +27,34 @@ import org.w3c.dom.Document;
  */
 public class ZEncoderTools {
 
+    // Variáveis para o controle da codificação
     private static ZEncoderTools encoder;
-
     private final IZencoderClient client;
-
-    private XPath xPath;
+    private final XPath xPath;
     
+    // URL de saída do vídeo
     private String urlOut = null;
 
+    /**
+     * 
+     * @return 
+     */
     public String getUrlOut() {
         return urlOut;
     }
 
+    /**
+     * 
+     */
     private ZEncoderTools() {
         client = new ZencoderClient("df3956fa9bb98d381065fa454f7832ec", ZencoderAPIVersion.API_V2);
         xPath = XPathFactory.newInstance().newXPath();
     }
 
+    /**
+     * 
+     * @return 
+     */
     public static ZEncoderTools getEncoder() {
         if (encoder == null) {
             encoder = new ZEncoderTools();
@@ -50,25 +62,43 @@ public class ZEncoderTools {
         return encoder;
     }
 
-    public void createJob(String inputFileName, String outputFileName) throws ZencoderErrorResponseException {
-
-        ZencoderJob job = new ZencoderJob("s3://" + AmazonS3Tools.BUCKET + AmazonS3Tools.FOLDER_SUFFIX + AmazonS3Tools.FOLDER_NAME + AmazonS3Tools.FOLDER_SUFFIX + inputFileName);
-
-        //job.setTest(true);
-        ZencoderOutput output = new ZencoderOutput("test", "s3://" + AmazonS3Tools.BUCKET + AmazonS3Tools.FOLDER_SUFFIX + AmazonS3Tools.FOLDER_NAME_OUPUT + AmazonS3Tools.FOLDER_SUFFIX + outputFileName);
+    /**
+     * 
+     * @param outputFileName
+     * @return 
+     */
+    private ZencoderOutput createOuput(String outputFileName)
+    {
+        ZencoderOutput output = new ZencoderOutput("test", "s3://" + AmazonS3Tools.getBasePath() + outputFileName);
+        output.setVideoCodec(ZencoderVideoCodec.mpeg4);
         output.setAudioBitrate(64);
         output.setPublic(true);
+        return output;
+    }
+    /**
+     * 
+     * @param inputFileName
+     * @param outputFileName
+     * @throws ZencoderErrorResponseException 
+     */
+    public void createJob(String inputFileName, String outputFileName) throws ZencoderErrorResponseException {
+
+        ZencoderJob job = new ZencoderJob("s3://" + AmazonS3Tools.getBasePath() + inputFileName);
+        ZencoderOutput output = createOuput(outputFileName);
         job.addOutput(output);
 
         client.createJob(job);
 
         ZencoderNotificationJobState state = client.getJobState(job);
 
+        // Aguarda até que o JOB tenha finalizado sua execução:
+        // 1. Encoding no ZEncoder
+        // 2. Gravação do arquivo de saída na S3
         float porcentFinished = 0;
         while (!state.equals(ZencoderNotificationJobState.FINISHED)) {
             try {
                 if (state.equals(ZencoderNotificationJobState.PROCESSING)) {
-                    porcentFinished = getTransformationProgress("" + job.getJobId());
+                    porcentFinished = getTransformationProgress(job.getJobId());
                     System.out.println("Andamento: " + porcentFinished + "%");
                 }
             } catch (XPathExpressionException ex) {
@@ -76,10 +106,9 @@ public class ZEncoderTools {
             }
             state = client.getJobState(job);
         }
-
         
         try {
-            urlOut = getRemoteTargetContentReference("" + job.getJobId());
+            urlOut = getRemoteTargetContentReference(job.getJobId());
         } catch (XPathExpressionException ex) {
             Logger.getLogger(ZEncoderTools.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -87,8 +116,14 @@ public class ZEncoderTools {
         System.out.println("Finalizado!! -->" + urlOut + ": porcent = " + porcentFinished+"%");
     }
 
-    protected float getTransformationProgress(String jobId) throws XPathExpressionException {
-        Document response = client.getJobProgress(new Integer(jobId));
+    /**
+     * 
+     * @param jobId
+     * @return
+     * @throws XPathExpressionException 
+     */
+    private float getTransformationProgress(Integer jobId) throws XPathExpressionException {
+        Document response = client.getJobProgress(jobId);
         String progress = (String) xPath.evaluate("/api-response/progress",
                 response, XPathConstants.STRING);
         if (progress == null || progress.isEmpty()) {
@@ -103,21 +138,17 @@ public class ZEncoderTools {
         return new Float(progress);
     }
 
-    protected String getRemoteTargetContentReference(String jobId) throws XPathExpressionException {
-        Document response = client.getJobDetails(new Integer(jobId));
-        // TODO: support for multiple outputs
+    /**
+     * 
+     * @param jobId
+     * @return
+     * @throws XPathExpressionException 
+     */
+    private String getRemoteTargetContentReference(Integer jobId) throws XPathExpressionException {
+        Document response = client.getJobDetails(jobId);
+
         String outputUrl = (String) xPath.evaluate("/api-response/job/output-media-files/output-media-file/url",
                 response, XPathConstants.STRING);
         return outputUrl;
     }
-
-    public static void main(String[] args) {
-        ZEncoderTools encoder = ZEncoderTools.getEncoder();
-        try {
-            encoder.createJob("sample.dv", "saida.m4v");
-        } catch (ZencoderErrorResponseException ex) {
-            Logger.getLogger(ZEncoderTools.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
-
 }

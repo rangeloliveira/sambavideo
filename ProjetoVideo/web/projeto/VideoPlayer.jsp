@@ -12,7 +12,20 @@
         <title>Player para o vídeo convertido</title>
     </head>
     <body>
-        <a href="<%= (String) request.getAttribute("urlOut")%>">
-            Assistir ao video</a>
+        <video width="640" height="480" controls autoplay>
+            <source src="<%= (String) request.getAttribute("urlOut")%>" type="video/mp4">    
+            <object data="<%= (String) request.getAttribute("urlOut")%>" width="640" height="480">
+                <embed src="<%= (String) request.getAttribute("urlOut")%>" width="640" height="480">
+            </object> 
+        </video>
+
+
+        <video width="640" height="480" controls autoplay>
+            <source src="https://s3-sa-east-1.amazonaws.com/rangelsambavideo/output/saida.m4v" type="video/mp4">            
+            <object data="https://s3-sa-east-1.amazonaws.com/rangelsambavideo/output/saida.m4v" width="640" height="480">
+                <embed src="https://s3-sa-east-1.amazonaws.com/rangelsambavideo/output/saida.m4v" width="640" height="480">
+            </object> 
+        </video>
+            
     </body>
 </html>

@@ -3,7 +3,6 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package projeto;
 
 import java.io.File;
@@ -16,6 +15,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 
@@ -26,16 +26,13 @@ import org.apache.commons.fileupload.servlet.ServletFileUpload;
 @WebServlet(name = "FileUpload", urlPatterns = {"/FileUpload"})
 public class FileUpload extends HttpServlet {
 
-        // location to store file uploaded
-    private static final String UPLOAD_DIRECTORY = "upload";
- 
-    // upload settings
-    private static final int MEMORY_THRESHOLD   = 1024 * 1024 * 3;  // 3MB
-    private static final int MAX_FILE_SIZE      = 1024 * 1024 * 200; // 40MB
-    private static final int MAX_REQUEST_SIZE   = 1024 * 1024 * 200; // 50MB
-    
-    private S3Folder s3Folder;
-    
+    // Configuração de upload
+    private static final int MEMORY_THRESHOLD = 1024 * 1024 * 3;  // 3MB
+    private static final int MAX_FILE_SIZE = 1024 * 1024 * 200; // 200MB
+    private static final int MAX_REQUEST_SIZE = 1024 * 1024 * 230; // 230MB
+
+    private AmazonS3Tools s3Folder;
+
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
@@ -49,77 +46,64 @@ public class FileUpload extends HttpServlet {
             throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
 
-        s3Folder = new S3Folder();        
-       
-        // checks if the request actually contains upload file
+        // verifica se a request contém um arquivo para upload
         if (!ServletFileUpload.isMultipartContent(request)) {
             // if not, we stop here
             PrintWriter writer = response.getWriter();
-            writer.println("Error: Form must has enctype=multipart/form-data.");
+            writer.println("Erro: O form deve estar como enctype=multipart/form-data.");
             writer.flush();
             return;
         }
- 
+
         // configures upload settings
         DiskFileItemFactory factory = new DiskFileItemFactory();
+        
         // sets memory threshold - beyond which files are stored in disk
         factory.setSizeThreshold(MEMORY_THRESHOLD);
-        // sets temporary location to store files
+        
+        // configura o local temporário de armazenamento de arquivos
         factory.setRepository(new File(System.getProperty("java.io.tmpdir")));
- 
+
         ServletFileUpload upload = new ServletFileUpload(factory);
-         
-        // sets maximum size of upload file
+
+        // configura o tamanho máximo do arquivo para upload
         upload.setFileSizeMax(MAX_FILE_SIZE);
-         
-        // sets maximum size of request (include file + form data)
+
+        // configura o tamanho máximo da request (incluindo arquivo e dados do formulário)
         upload.setSizeMax(MAX_REQUEST_SIZE);
- 
-        // constructs the directory path to store upload file
-        // this path is relative to application's directory
-        String uploadPath = getServletContext().getRealPath("")
-                + File.separator + UPLOAD_DIRECTORY;
-         
-        // creates the directory if it does not exist
-        File uploadDir = new File(uploadPath);
-        if (!uploadDir.exists()) {
-            uploadDir.mkdir();
-        }
- 
+
         try {
-            // parses the request's content to extract file data
+            // Recupera o conteúdo da request para extração dos dados do arquivo
             @SuppressWarnings("unchecked")
             List<FileItem> formItems = upload.parseRequest(request);
- 
-            if (formItems != null && formItems.size() > 0) {
-                // iterates over form's fields
+
+            if (formItems != null && formItems.size() > 0) {                
                 for (FileItem item : formItems) {
-                    // processes only fields that are not form fields
-                                        
                     if (!item.isFormField()) {
                         String fileName = new File(item.getName()).getName();
-                        String filePath = uploadPath + File.separator + fileName;
-                        File storeFile = new File(filePath);
-                        
+
                         // Cria um bucket do inputStream de upload na Amazon S3
+                        s3Folder = new AmazonS3Tools();
                         s3Folder.create(item, fileName);
-                        
-                        // saves the file on disk
-                        item.write(storeFile);
+
                         request.setAttribute("message",
-                            "Upload has been done successfully!");
+                                "Upload has been done successfully!");
                     }
                 }
             }
-        } catch (Exception ex) {
+        } catch (IOException ex) {
+            request.setAttribute("message",
+                    "There was an error: " + ex.getMessage());
+        } catch (FileUploadException ex) {
             request.setAttribute("message",
                     "There was an error: " + ex.getMessage());
         }
         // redirects client to message page
         getServletContext().getRequestDispatcher("/index.jsp").forward(
-                request, response);    
-       
+                request, response);
     }
+    
+    
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**

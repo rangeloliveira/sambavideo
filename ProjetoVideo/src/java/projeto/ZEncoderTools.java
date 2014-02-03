@@ -46,10 +46,10 @@ public class ZEncoderTools {
 
     public void createJob(String inputFileName, String outputFileName) throws ZencoderErrorResponseException {
 
-        ZencoderJob job = new ZencoderJob("s3://" + S3Folder.BUCKET + S3Folder.FOLDER_SUFFIX + S3Folder.FOLDER_NAME + S3Folder.FOLDER_SUFFIX + inputFileName);
+        ZencoderJob job = new ZencoderJob("s3://" + AmazonS3Tools.BUCKET + AmazonS3Tools.FOLDER_SUFFIX + AmazonS3Tools.FOLDER_NAME + AmazonS3Tools.FOLDER_SUFFIX + inputFileName);
 
         //job.setTest(true);
-        ZencoderOutput output = new ZencoderOutput("test", "s3://" + S3Folder.BUCKET + S3Folder.FOLDER_SUFFIX + S3Folder.FOLDER_NAME_OUPUT + S3Folder.FOLDER_SUFFIX + outputFileName);
+        ZencoderOutput output = new ZencoderOutput("test", "s3://" + AmazonS3Tools.BUCKET + AmazonS3Tools.FOLDER_SUFFIX + AmazonS3Tools.FOLDER_NAME_OUPUT + AmazonS3Tools.FOLDER_SUFFIX + outputFileName);
         output.setAudioBitrate(64);
         output.setPublic(true);
         job.addOutput(output);
@@ -58,21 +58,27 @@ public class ZEncoderTools {
 
         ZencoderNotificationJobState state = client.getJobState(job);
 
+        float porcentFinished = 0;
         while (!state.equals(ZencoderNotificationJobState.FINISHED)) {
             try {
-                float p = getTransformationProgress("" + job.getJobId());                
+                if (state.equals(ZencoderNotificationJobState.PROCESSING)) {
+                    porcentFinished = getTransformationProgress("" + job.getJobId());
+                    System.out.println("Andamento: " + porcentFinished + "%");
+                }
             } catch (XPathExpressionException ex) {
                 Logger.getLogger(ZEncoderTools.class.getName()).log(Level.SEVERE, null, ex);
             }
             state = client.getJobState(job);
         }
+
+        String urlView = null;
         try {
-            String urlView = getRemoteTargetContentReference("" + job.getJobId());
+            urlView = getRemoteTargetContentReference("" + job.getJobId());
         } catch (XPathExpressionException ex) {
             Logger.getLogger(ZEncoderTools.class.getName()).log(Level.SEVERE, null, ex);
         }
 
-        System.out.println("Finalizado!!");
+        System.out.println("Finalizado!! -->" + urlView + ": porcent = " + porcentFinished+"%");
     }
 
     protected float getTransformationProgress(String jobId) throws XPathExpressionException {

@@ -3,6 +3,7 @@ package projeto;
 import java.io.InputStream;
 
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.ClasspathPropertiesFileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
@@ -10,7 +11,7 @@ import com.amazonaws.services.s3.model.PutObjectResult;
 import java.io.IOException;
 import org.apache.commons.fileupload.FileItem;
 
-public class S3Folder {
+public class AmazonS3Tools {
 
     private static final String AWS_KEY = "AKIAJ5NS3OEEFMT7JJPA";
     private static final String AWS_SECRET = "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";
@@ -22,9 +23,11 @@ public class S3Folder {
     
     private final AmazonS3Client client;
 
-    public S3Folder() {
-        // Create S3 Client object using AWS KEY & SECRET
+    public AmazonS3Tools() {
+        
+       // Cria o cliente S3, de acordo com o arquivo de configuração
         client = new AmazonS3Client(
+                //new ClasspathPropertiesFileCredentialsProvider());
                 new BasicAWSCredentials(AWS_KEY, AWS_SECRET));
     }
     

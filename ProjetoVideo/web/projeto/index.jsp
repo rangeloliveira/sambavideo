@@ -12,12 +12,11 @@
         <title>ProjetoVideo</title>
     </head>
     <body>
-        
-        <FORM action="FileUpload" METHOD="POST" enctype="multipart/form-data">
-            <input type="file" name="mediafile" size="40">
-            <INPUT TYPE="submit" VALUE="Converter">
-        </FORM>
-        
+        <h1>Conversão de vídeo: ZEncoder/AmazonS3</h1>
+        <form action="FileUpload" method="post" enctype="multipart/form-data">
+            Escolha o arquivo de vídeo: <input type="file" name="mediafile" size="40"> <br>
+            <input type="submit" value="Converter">
+        </form>    
 
         
     </body>

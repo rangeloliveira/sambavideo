@@ -19,10 +19,20 @@ public class AmazonS3Tools {
 
     
     private final AmazonS3Client client;
+    private static AmazonS3Tools amazonS3Tools;
 
-    public AmazonS3Tools() {        
+    private AmazonS3Tools() {        
        // Cria o cliente S3, de acordo com o arquivo de configuração
         client = new AmazonS3Client(new ClasspathPropertiesFileCredentialsProvider());
+    }
+    
+    public static AmazonS3Tools getAmazonS3()
+    {
+        if(amazonS3Tools==null)
+        {
+            amazonS3Tools = new AmazonS3Tools();
+        }
+        return amazonS3Tools;
     }
 
     public void create(FileItem fileItem, String fileName) throws IOException {

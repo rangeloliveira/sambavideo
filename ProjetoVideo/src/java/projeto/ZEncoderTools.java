@@ -31,6 +31,12 @@ public class ZEncoderTools {
     private final IZencoderClient client;
 
     private XPath xPath;
+    
+    private String urlOut = null;
+
+    public String getUrlOut() {
+        return urlOut;
+    }
 
     private ZEncoderTools() {
         client = new ZencoderClient("df3956fa9bb98d381065fa454f7832ec", ZencoderAPIVersion.API_V2);
@@ -71,14 +77,14 @@ public class ZEncoderTools {
             state = client.getJobState(job);
         }
 
-        String urlView = null;
+        
         try {
-            urlView = getRemoteTargetContentReference("" + job.getJobId());
+            urlOut = getRemoteTargetContentReference("" + job.getJobId());
         } catch (XPathExpressionException ex) {
             Logger.getLogger(ZEncoderTools.class.getName()).log(Level.SEVERE, null, ex);
         }
 
-        System.out.println("Finalizado!! -->" + urlView + ": porcent = " + porcentFinished+"%");
+        System.out.println("Finalizado!! -->" + urlOut + ": porcent = " + porcentFinished+"%");
     }
 
     protected float getTransformationProgress(String jobId) throws XPathExpressionException {

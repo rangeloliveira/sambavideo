@@ -5,10 +5,13 @@
  */
 package projeto;
 
+import de.bitzeche.video.transcoding.zencoder.response.ZencoderErrorResponseException;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -31,11 +34,123 @@ public class FileUpload extends HttpServlet {
     private static final int MAX_FILE_SIZE = 1024 * 1024 * 200; // 200MB
     private static final int MAX_REQUEST_SIZE = 1024 * 1024 * 230; // 230MB
 
-    private AmazonS3Tools s3Folder;
+    // Variáveis para integração com a Amazon S3 e ZEncoder
+    private AmazonS3Tools amazonS3Tools;
+    private ZEncoderTools zEncoderTools;
+    private ServletFileUpload servletFileUpload;
+
+    /**
+     * 
+     */    
+    public FileUpload() {
+        configure();
+    }
+
+    /**
+     * 
+     */
+    private void configure() {
+        // Configura o upload
+        DiskFileItemFactory factory = new DiskFileItemFactory();
+
+        // Configura o limite de memória para armazenamento de arquivos em disco
+        factory.setSizeThreshold(MEMORY_THRESHOLD);
+
+        // configura o local temporário de armazenamento de arquivos
+        factory.setRepository(new File(System.getProperty("java.io.tmpdir")));
+
+        servletFileUpload = new ServletFileUpload(factory);
+
+        // configura o tamanho máximo do arquivo para upload
+        servletFileUpload.setFileSizeMax(MAX_FILE_SIZE);
+
+        // configura o tamanho máximo da request (incluindo arquivo e dados do formulário)
+        servletFileUpload.setSizeMax(MAX_REQUEST_SIZE);
+
+        amazonS3Tools = AmazonS3Tools.getAmazonS3();
+        zEncoderTools = ZEncoderTools.getEncoder();
+    }
+
+    
+    /**
+     * 
+     * @param request
+     * @param response 
+     */
+    private boolean checkRequest(HttpServletRequest request, HttpServletResponse response) throws IOException
+    {
+        // verifica se a request contém um arquivo para upload
+        if (!ServletFileUpload.isMultipartContent(request)) {
+            // if not, we stop here
+            PrintWriter writer = response.getWriter();
+            writer.println("Erro: O form deve estar como enctype=multipart/form-data.");
+            writer.flush();
+            return false;
+        }
+        return true;
+    }
+    /**
+     * 
+     * @param request
+     * @return 
+     */
+    private FileItem getFileItem(HttpServletRequest request) {
+        try {
+            // Recupera o conteúdo da request para extração dos dados do arquivo
+            @SuppressWarnings("unchecked")
+            List<FileItem> formItems = servletFileUpload.parseRequest(request);
+
+            if (formItems != null && formItems.size() > 0) {
+                for (FileItem item : formItems) {
+                    if (!item.isFormField()) {
+                        return item;
+                    }
+                }
+            }
+        } catch (FileUploadException ex) {
+            request.setAttribute("message",
+                    "Houve um erro no upload do arquivo: " + ex.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * 
+     * @param request
+     * @return
+     * @throws IOException 
+     */
+    private FileItem uploadAmazonS3(HttpServletRequest request) {
+        FileItem item = getFileItem(request);
+        String fileName = new File(item.getName()).getName();
+        try {
+            // Cria um bucket do inputStream de upload na Amazon S3
+            amazonS3Tools.create(item, fileName);
+        } catch (IOException ex) {
+            Logger.getLogger(FileUpload.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        return item;
+    }
+
+    /**
+     * 
+     * @param item 
+     */
+    private void encoderWithZEncoder(FileItem item) {
+        String fileName = new File(item.getName()).getName();
+        try {
+            zEncoderTools.createJob(fileName, fileName);
+        } catch (ZencoderErrorResponseException ex) {
+            Logger.getLogger(FileUpload.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
+     * 
+     * É responsável pelo fluxo principal da applicação.
      *
      * @param request servlet request
      * @param response servlet response
@@ -46,64 +161,27 @@ public class FileUpload extends HttpServlet {
             throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
 
-        // verifica se a request contém um arquivo para upload
-        if (!ServletFileUpload.isMultipartContent(request)) {
-            // if not, we stop here
-            PrintWriter writer = response.getWriter();
-            writer.println("Erro: O form deve estar como enctype=multipart/form-data.");
-            writer.flush();
+        if(!checkRequest(request, response))
+        {
             return;
         }
 
-        // configures upload settings
-        DiskFileItemFactory factory = new DiskFileItemFactory();
+        // Fase de upload para a Amazon S3
+        FileItem item = uploadAmazonS3(request);
         
-        // sets memory threshold - beyond which files are stored in disk
-        factory.setSizeThreshold(MEMORY_THRESHOLD);
+        // Fase de Encoding com o Zencoder
+        encoderWithZEncoder(item);
         
-        // configura o local temporário de armazenamento de arquivos
-        factory.setRepository(new File(System.getProperty("java.io.tmpdir")));
+        // URL na Amazon S3 do arquivo convertido
+        String urlOut = zEncoderTools.getUrlOut();
 
-        ServletFileUpload upload = new ServletFileUpload(factory);
+        request.setAttribute("message", "Upload realizado com sucesso!");
+        request.setAttribute("urlOut", urlOut);
 
-        // configura o tamanho máximo do arquivo para upload
-        upload.setFileSizeMax(MAX_FILE_SIZE);
-
-        // configura o tamanho máximo da request (incluindo arquivo e dados do formulário)
-        upload.setSizeMax(MAX_REQUEST_SIZE);
-
-        try {
-            // Recupera o conteúdo da request para extração dos dados do arquivo
-            @SuppressWarnings("unchecked")
-            List<FileItem> formItems = upload.parseRequest(request);
-
-            if (formItems != null && formItems.size() > 0) {                
-                for (FileItem item : formItems) {
-                    if (!item.isFormField()) {
-                        String fileName = new File(item.getName()).getName();
-
-                        // Cria um bucket do inputStream de upload na Amazon S3
-                        s3Folder = new AmazonS3Tools();
-                        s3Folder.create(item, fileName);
-
-                        request.setAttribute("message",
-                                "Upload has been done successfully!");
-                    }
-                }
-            }
-        } catch (IOException ex) {
-            request.setAttribute("message",
-                    "There was an error: " + ex.getMessage());
-        } catch (FileUploadException ex) {
-            request.setAttribute("message",
-                    "There was an error: " + ex.getMessage());
-        }
-        // redirects client to message page
-        getServletContext().getRequestDispatcher("/index.jsp").forward(
+        // Redireciona para o player de vídeo
+        getServletContext().getRequestDispatcher("/VideoPlayer.jsp").forward(
                 request, response);
     }
-    
-    
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
     /**

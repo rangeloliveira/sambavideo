@@ -4,15 +4,12 @@ import java.io.InputStream;
 
 import com.amazonaws.auth.ClasspathPropertiesFileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
-import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.s3.model.S3Object;
 import java.io.IOException;
 import java.net.URL;
-import java.util.Date;
 
 public class AmazonS3Tools {
 
@@ -30,6 +27,10 @@ public class AmazonS3Tools {
         client = new AmazonS3Client(new ClasspathPropertiesFileCredentialsProvider());
     }
 
+    /**
+     * 
+     * @return 
+     */
     public static AmazonS3Tools getAmazonS3() {
         if (amazonS3Tools == null) {
             amazonS3Tools = new AmazonS3Tools();
@@ -53,6 +54,13 @@ public class AmazonS3Tools {
         return AmazonS3Tools.BUCKET + AmazonS3Tools.FOLDER_SUFFIX + AmazonS3Tools.FOLDER_NAME_OUPUT + AmazonS3Tools.FOLDER_SUFFIX;
     }
 
+    /**
+     * 
+     * @param inputStream
+     * @param lenght
+     * @param fileName
+     * @throws IOException 
+     */
     public void create(InputStream inputStream, Long lenght, String fileName) throws IOException {
 
         // Configura o metadata de acordo com o tamanho do fluxo de entrada
@@ -70,9 +78,10 @@ public class AmazonS3Tools {
     }
 
     /**
-     *
-     * @param objectRequest
-     * @return
+     * 
+     * @param bucket
+     * @param key
+     * @return 
      */
     public S3Object getObject(String bucket, String key) {
         return client.getObject(bucket, key);
@@ -89,8 +98,9 @@ public class AmazonS3Tools {
     }
 
     /**
-     *
-     * @param s3Object
+     * 
+     * @param bucket
+     * @param key 
      */
     public void deleteObject(String bucket, String key) {
         client.deleteObject(bucket, key);

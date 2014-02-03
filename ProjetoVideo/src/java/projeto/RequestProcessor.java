@@ -9,6 +9,7 @@ import de.bitzeche.video.transcoding.zencoder.response.ZencoderErrorResponseExce
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -123,12 +124,12 @@ public class RequestProcessor extends HttpServlet {
     private FileItem uploadAmazonS3(HttpServletRequest request) {
         FileItem item = getFileItem(request);
         String fileName = new File(item.getName()).getName();
-        try {
+        /*try {
             // Cria um bucket do inputStream de upload na Amazon S3
             amazonS3Tools.create(item.getInputStream(), item.getSize(), fileName);
         } catch (IOException ex) {
             Logger.getLogger(RequestProcessor.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        }*/
         
         return item;
     }
@@ -138,9 +139,12 @@ public class RequestProcessor extends HttpServlet {
      * @param item 
      */
     private void encoderWithZEncoder(FileItem item) {
-        String fileName = new File(item.getName()).getName();
+        File file = new File(item.getName());
         try {
-            zEncoderTools.createJob(fileName, fileName);
+            String[] split = file.toPath().toString().split("\\.");            
+            String outputFileName = split[0] + ".m4v";
+            
+            zEncoderTools.createJob(file.getName(), outputFileName);
         } catch (ZencoderErrorResponseException ex) {
             Logger.getLogger(RequestProcessor.class.getName()).log(Level.SEVERE, null, ex);
         }

@@ -14,9 +14,12 @@ public class S3Folder {
 
     private static final String AWS_KEY = "AKIAJ5NS3OEEFMT7JJPA";
     private static final String AWS_SECRET = "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";
-    private static final String BUCKET = "rangelsambavideo";
-    private final static String FOLDER_SUFFIX = "/";
-    private final static String FOLDER_NAME = "input";
+    public static final String BUCKET = "rangelsambavideo";
+    public final static String FOLDER_SUFFIX = "/";
+    public final static String FOLDER_NAME = "input";
+    public final static String FOLDER_NAME_OUPUT = "output";
+
+    
     private final AmazonS3Client client;
 
     public S3Folder() {
@@ -24,6 +27,8 @@ public class S3Folder {
         client = new AmazonS3Client(
                 new BasicAWSCredentials(AWS_KEY, AWS_SECRET));
     }
+    
+    
 
     public void create(FileItem fileItem, String fileName) throws IOException {
 		// TODO validate foldername 
@@ -44,4 +49,5 @@ public class S3Folder {
         PutObjectResult result = client.putObject(putObjectRequest);
 
     }
+    
 }

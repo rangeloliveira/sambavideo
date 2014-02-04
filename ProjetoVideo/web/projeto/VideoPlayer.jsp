@@ -2,6 +2,9 @@
     Document   : VideoPlayer
     Created on : Feb 3, 2014, 9:09:05 AM
     Author     : Rangel
+
+    Arquivo proposto para resolver o problema de visualização do vídeo. Entretanto
+a visualização do mesmo na página inicial ficou melhor.
 --%>
 
 <%@page contentType="text/html" pageEncoding="UTF-8"%>

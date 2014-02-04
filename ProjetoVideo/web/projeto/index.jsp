@@ -2,6 +2,8 @@
     Document   : index
     Created on : 31/01/2014, 23:32:16
     Author     : Rangel
+
+    Concentra a submissão do arquivo quanto a visualização do vídeo convertido.
 --%>
 
 <%@page contentType="text/html" pageEncoding="UTF-8"%>

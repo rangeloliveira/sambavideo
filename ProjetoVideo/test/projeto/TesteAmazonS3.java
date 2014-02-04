@@ -1,12 +1,6 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package projeto;
 
 import com.amazonaws.services.s3.model.AmazonS3Exception;
-import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import java.io.File;
 import java.io.FileInputStream;
@@ -15,15 +9,13 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
  *
+ * Classe de testes das operações da Amazon S3.
  * @author Rangel
  */
 public class TesteAmazonS3 {
@@ -36,32 +28,25 @@ public class TesteAmazonS3 {
     public TesteAmazonS3() {
     }
 
-    @BeforeClass
-    public static void setUpClass() {
-    }
-
-    @AfterClass
-    public static void tearDownClass() {
-    }
-
+    /**
+     * Configuração inicial para execução dos testes.
+     */
     @Before
     public void setUp() {
         amazonS3Tools = AmazonS3Tools.getAmazonS3();
         amazonS3Tools.FOLDER_NAME = folder;
         amazonS3Tools.FOLDER_NAME_OUPUT = folder;
     }
-
-    @After
-    public void tearDown() {
-        // Remove se o arquivo foi criado
-    }
     
     private void createFileInS3() throws IOException
     {
         File file = new File(fileName);
-        amazonS3Tools.create(new FileInputStream(file), file.length(), fileName);
+        amazonS3Tools.createObject(new FileInputStream(file), file.length(), fileName);
     }
 
+    /**
+     * Realiza o teste de upload do arquivo para a Amazon S3
+     */
     @Test
     public void testeUpload() {
         try {
@@ -72,7 +57,7 @@ public class TesteAmazonS3 {
     }
 
     /**
-     *
+     * Teste de download do arquivo da Amazon S3
      */
     @Test
     public void testeDownload() {
@@ -82,17 +67,18 @@ public class TesteAmazonS3 {
             createFileInS3();
             
             object = amazonS3Tools.getObject(AmazonS3Tools.BUCKET, folder + "/" + fileName);
+            Assert.assertNotNull(object);
             
-            System.out.println("Content-Type: " + object.getObjectMetadata().getContentType());
         } catch (AmazonS3Exception e) {
             Assert.fail(e.getErrorCode() + ":" + e.getMessage());
         } catch (IOException ex) {
+            Assert.fail(ex.getMessage());
             Logger.getLogger(TesteAmazonS3.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
     /**
-     * 
+     * Teste de remoção do arquivo da S3
      */
     @Test
     public void testeDeleteObject() {
@@ -100,7 +86,7 @@ public class TesteAmazonS3 {
         S3Object object = null;
         try {
             File file = new File(fileName);
-            amazonS3Tools.create(new FileInputStream(file), file.length(), fileName);
+            amazonS3Tools.createObject(new FileInputStream(file), file.length(), fileName);
             
             amazonS3Tools.deleteObject(AmazonS3Tools.BUCKET, folder + "/" + fileName);
             object = amazonS3Tools.getObject(AmazonS3Tools.BUCKET, folder + "/" + fileName);
@@ -115,7 +101,7 @@ public class TesteAmazonS3 {
     }
 
     /**
-     * 
+     * Teste para recuperar a URL pública de um determinado arquivo na S3
      */
     @Test
     public void testeGetURL() {
@@ -129,12 +115,5 @@ public class TesteAmazonS3 {
         String urlExpected = "https://rangelsambavideo.s3.amazonaws.com/tests/arquivo_teste.txt";
         
         Assert.assertEquals(urlExpected, url.toExternalForm());
-    }
-
-    @Test
-    public void testeSetPublicFile() {
-        int a = 10;
-        a++;
-        Assert.assertEquals(a, 11);
     }
 }

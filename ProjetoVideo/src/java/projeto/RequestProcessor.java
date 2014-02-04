@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package projeto;
 
 import de.bitzeche.video.transcoding.zencoder.response.ZencoderErrorResponseException;
@@ -40,13 +35,15 @@ public class RequestProcessor extends HttpServlet {
     private ServletFileUpload servletFileUpload;
 
     /**
-     * 
+     * Construtor: faz a chamada ao método de configuração do ambiente.
      */    
     public RequestProcessor() {
         configure();
     }
 
     /**
+     * Realiza as configurações iniciais para que o processo de upload do arquivo
+     * e codificação seja realizado com sucesso.
      * 
      */
     private void configure() {
@@ -73,15 +70,17 @@ public class RequestProcessor extends HttpServlet {
 
     
     /**
+     * Verifica se a request contém um arquivo para upload.
      * 
-     * @param request
-     * @param response 
+     * @param request requisição do cliente
+     * @param response resposta a ser preenchida.
+     * 
+     * @return true se tudo estiver ok, false caso contrário.
      */
     private boolean checkRequest(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         // verifica se a request contém um arquivo para upload
         if (!ServletFileUpload.isMultipartContent(request)) {
-            // if not, we stop here
             PrintWriter writer = response.getWriter();
             writer.println("Erro: O form deve estar como enctype=multipart/form-data.");
             writer.flush();
@@ -89,9 +88,11 @@ public class RequestProcessor extends HttpServlet {
         }
         return true;
     }
+    
     /**
+     * Recupera o arquivo submetido da requisição.
      * 
-     * @param request
+     * @param request requisição do cliente.
      * @return 
      */
     private FileItem getFileItem(HttpServletRequest request) {
@@ -115,34 +116,40 @@ public class RequestProcessor extends HttpServlet {
     }
 
     /**
+     * Recuperar o arquivo submetido via request e cria um objeto na S3.
      * 
-     * @param request
-     * @return
+     * @param request requisição realizada ao acionar o botão converter
+     * @return o arquivo submetido
      * @throws IOException 
      */
     private FileItem uploadAmazonS3(HttpServletRequest request) {
         FileItem item = getFileItem(request);
         String fileName = new File(item.getName()).getName();
         try {
-            // Cria um bucket do inputStream de upload na Amazon S3
-            amazonS3Tools.create(item.getInputStream(), item.getSize(), fileName);
+            // Cria um bucket do inputStream de upload na Amazon S3            
+            amazonS3Tools.createObject(item.getInputStream(), item.getSize(), fileName);
         } catch (IOException ex) {
             Logger.getLogger(RequestProcessor.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        
+        }        
         return item;
     }
 
     /**
-     * 
-     * @param item 
+     * Codifica o arquivo de vídeo gravado na S3 para um vídeo compatível com a Web
+     * @param item arquivo submetido
      */
     private void encoderWithZEncoder(FileItem item) {
         File file = new File(item.getName());
         try {
             String[] split = file.getName().split("\\.");
-            String outputFileName = split[0] + ".m4v";
+            String outputFileName = "outputTemp.m4v";
             
+            if(split!=null && split.length>0)
+            {
+                outputFileName = split[0] + ".m4v";
+            }
+            
+            // Cria o Job na plataforma do ZEncoder
             zEncoderTools.createJob(file.getName(), outputFileName);
         } catch (ZencoderErrorResponseException ex) {
             Logger.getLogger(RequestProcessor.class.getName()).log(Level.SEVERE, null, ex);
